@@ -391,12 +391,12 @@
                             case 'no-speech':
                                 console.log('音声が検出されませんでした');
                                 this.updateStatus('音声が検出されませんでした。もう一度お試しください。', 'warning');
-                                // 自動的に再認識を試行
+                                // 自動的に再認識を試行（時間短縮）
                                 setTimeout(() => {
                                     if (!this.isRecording) {
                                         this.startRecognition();
                                     }
-                                }, 1000);
+                                }, 500);
                                 break;
                             case 'audio-capture':
                                 this.updateStatus('マイクへのアクセスができません。マイクの権限を確認してください。', 'error');
@@ -425,22 +425,22 @@
                                 browser: this.browser.browserInfo
                             });
                             
-                            // 信頼度チェック（iOS Safari用）
-                            if (confidence < 0.7) {
+                            // 信頼度チェック（iOS Safari用）- 閾値を緩和
+                            if (confidence < 0.5) {
                                 console.warn('Low confidence speech recognition:', confidence);
                                 
-                                if (confidence < 0.5) {
-                                    // 信頼度が非常に低い場合は再認識を促す
+                                if (confidence < 0.3) {
+                                    // 信頼度が非常に低い場合のみ再認識を促す
                                     this.updateStatus('音声がはっきり聞こえませんでした。もう一度、はっきりと話してください。', 'warning');
                                     this.stats.reRecognitionCount++;
                                     this.updateStats();
                                     
-                                    // 自動的に再認識を試行
+                                    // 自動的に再認識を試行（時間短縮）
                                     setTimeout(() => {
                                         if (!this.isRecording) {
                                             this.startRecognition();
                                         }
-                                    }, 2000);
+                                    }, 1000);
                                     return;
                                 }
                             }
@@ -450,16 +450,16 @@
                         }
                     });
                     
-                    // 6. iOS Safari用の音声認識終了処理
+                    // 6. iOS Safari用の音声認識終了処理（遅延時間短縮）
                     this.recognition.addEventListener('end', () => {
                         console.log('Speech recognition ended');
                         
-                        // iOS Safariでは少し遅延させてから後処理を実行
+                        // iOS Safariでは遅延時間を短縮
                         setTimeout(() => {
                             this.isRecording = false;
                             this.updateStatus('音声認識終了', 'idle');
                             this.updateButtons();
-                        }, 200);
+                        }, 100);
                     });
                     
                 } else {
@@ -519,8 +519,8 @@
             }
             
             getConfidenceLevel(confidence) {
-                if (confidence >= 0.8) return 'high';
-                if (confidence >= 0.6) return 'medium';
+                if (confidence >= 0.6) return 'high';
+                if (confidence >= 0.4) return 'medium';
                 return 'low';
             }
             
@@ -547,7 +547,7 @@
                     if (!this.isRecording) {
                         this.startRecognition();
                     }
-                }, 1000);
+                }, 500);
             }
             
             setupEventListeners() {
