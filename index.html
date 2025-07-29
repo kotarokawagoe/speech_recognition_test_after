@@ -249,18 +249,18 @@
         <h1>🎤 音声認識テスト - 修正後</h1>
         
         <div class="test-info">
-            <h3>✅ 修正後の実装</h3>
-            <p>このページでは、iPhoneでの音声認識精度を改善するための修正版をテストできます。ブラウザ検出、信頼度チェック、エラーハンドリングが強化されています。</p>
+            <h3>✅ 修正後の実装（解決策2）</h3>
+            <p>このページでは、iPhoneでの音声認識精度を改善するための解決策2（結果の即座処理）をテストできます。endイベントに依存せず、認識結果を即座に処理します。</p>
         </div>
         
         <div class="improvements">
             <h4>🔧 実装された改善点</h4>
             <ul>
                 <li><strong>ブラウザ検出:</strong> iOS Safari/Chromeを正確に識別</li>
-                <li><strong>信頼度チェック:</strong> 低信頼度の認識結果を自動フィルタリング</li>
+                <li><strong>即座処理:</strong> 認識結果を即座に処理（endイベントに依存しない）</li>
                 <li><strong>エラーハンドリング:</strong> 詳細なエラーメッセージと解決策</li>
                 <li><strong>遅延処理:</strong> iOS Safari用の安定化処理</li>
-                <li><strong>再認識機能:</strong> 低信頼度時の自動再試行</li>
+                <li><strong>シンプルな実装:</strong> 複雑な信頼度チェックを削除</li>
             </ul>
         </div>
         
@@ -299,10 +299,6 @@
                 <div class="stat-value" id="avgConfidence">0%</div>
                 <div class="stat-label">平均信頼度</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-value" id="reRecognitionCount">0</div>
-                <div class="stat-label">再認識回数</div>
-            </div>
         </div>
     </div>
 
@@ -316,8 +312,7 @@
                 this.stats = {
                     totalAttempts: 0,
                     successfulAttempts: 0,
-                    totalConfidence: 0,
-                    reRecognitionCount: 0
+                    totalConfidence: 0
                 };
                 this.browser = this.detectBrowser();
                 
@@ -425,41 +420,21 @@
                                 browser: this.browser.browserInfo
                             });
                             
-                            // 信頼度チェック（iOS Safari用）
-                            if (confidence < 0.7) {
-                                console.warn('Low confidence speech recognition:', confidence);
-                                
-                                if (confidence < 0.5) {
-                                    // 信頼度が非常に低い場合は再認識を促す
-                                    this.updateStatus('音声がはっきり聞こえませんでした。もう一度、はっきりと話してください。', 'warning');
-                                    this.stats.reRecognitionCount++;
-                                    this.updateStats();
-                                    
-                                    // 自動的に再認識を試行
-                                    setTimeout(() => {
-                                        if (!this.isRecording) {
-                                            this.startRecognition();
-                                        }
-                                    }, 2000);
-                                    return;
-                                }
+                            // 解決策2: 結果を即座に処理（iPhone対応）
+                            if (transcript) {
+                                this.addResult(transcript, confidence, 'high-confidence');
                             }
-                            
-                            // 結果を処理
-                            this.handleSpeechResult(transcript, confidence);
                         }
                     });
                     
-                    // 6. iOS Safari用の音声認識終了処理
+                    // 6. iOS Safari用の音声認識終了処理（UI更新のみ）
                     this.recognition.addEventListener('end', () => {
                         console.log('Speech recognition ended');
                         
-                        // iOS Safariでは少し遅延させてから後処理を実行
-                        setTimeout(() => {
-                            this.isRecording = false;
-                            this.updateStatus('音声認識終了', 'idle');
-                            this.updateButtons();
-                        }, 200);
+                        // UI状態を更新
+                        this.isRecording = false;
+                        this.updateStatus('音声認識終了', 'idle');
+                        this.updateButtons();
                     });
                     
                 } else {
@@ -476,7 +451,10 @@
                                 confidence: confidence
                             });
                             
-                            this.handleSpeechResult(transcript, confidence);
+                            // 解決策2: 結果を即座に処理
+                            if (transcript) {
+                                this.addResult(transcript, confidence, 'high-confidence');
+                            }
                         }
                     });
                     
@@ -496,58 +474,10 @@
                 }
             }
             
+            // 複雑な信頼度処理を削除し、シンプルな処理に変更
             handleSpeechResult(transcript, confidence) {
-                // 信頼度に基づく処理
-                const confidenceLevel = this.getConfidenceLevel(confidence);
-                
-                switch(confidenceLevel) {
-                    case 'high':
-                        // 高信頼度：即座に使用
-                        this.addResult(transcript, confidence, 'high-confidence');
-                        break;
-                        
-                    case 'medium':
-                        // 中信頼度：確認ダイアログ
-                        this.showConfirmationDialog(transcript, confidence);
-                        break;
-                        
-                    case 'low':
-                        // 低信頼度：再認識要求
-                        this.requestReRecognition();
-                        break;
-                }
-            }
-            
-            getConfidenceLevel(confidence) {
-                if (confidence >= 0.8) return 'high';
-                if (confidence >= 0.6) return 'medium';
-                return 'low';
-            }
-            
-            showConfirmationDialog(transcript, confidence) {
-                const confirmed = confirm(
-                    `認識結果: "${transcript}"\n` +
-                    `信頼度: ${Math.round(confidence * 100)}%\n\n` +
-                    `この内容でよろしいですか？`
-                );
-                
-                if (confirmed) {
-                    this.addResult(transcript, confidence, 'medium-confidence');
-                } else {
-                    this.requestReRecognition();
-                }
-            }
-            
-            requestReRecognition() {
-                this.stats.reRecognitionCount++;
-                this.updateStats();
-                this.updateStatus('再認識を開始します...', 'warning');
-                
-                setTimeout(() => {
-                    if (!this.isRecording) {
-                        this.startRecognition();
-                    }
-                }, 1000);
+                // 解決策2: 即座に結果を追加
+                this.addResult(transcript, confidence, 'high-confidence');
             }
             
             setupEventListeners() {
@@ -640,8 +570,7 @@
                 this.stats = {
                     totalAttempts: 0,
                     successfulAttempts: 0,
-                    totalConfidence: 0,
-                    reRecognitionCount: 0
+                    totalConfidence: 0
                 };
                 this.updateResults();
                 this.updateStats();
@@ -659,8 +588,6 @@
                     ? Math.round((this.stats.totalConfidence / this.stats.successfulAttempts) * 100)
                     : 0;
                 document.getElementById('avgConfidence').textContent = `${avgConfidence}%`;
-                
-                document.getElementById('reRecognitionCount').textContent = this.stats.reRecognitionCount;
             }
             
             updateStatus(message, type) {
