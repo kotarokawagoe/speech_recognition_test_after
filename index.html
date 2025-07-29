@@ -391,12 +391,12 @@
                             case 'no-speech':
                                 console.log('音声が検出されませんでした');
                                 this.updateStatus('音声が検出されませんでした。もう一度お試しください。', 'warning');
-                                // 自動的に再認識を試行（時間短縮）
+                                // 自動的に再認識を試行（時間大幅短縮）
                                 setTimeout(() => {
                                     if (!this.isRecording) {
                                         this.startRecognition();
                                     }
-                                }, 500);
+                                }, 200);
                                 break;
                             case 'audio-capture':
                                 this.updateStatus('マイクへのアクセスができません。マイクの権限を確認してください。', 'error');
@@ -425,24 +425,22 @@
                                 browser: this.browser.browserInfo
                             });
                             
-                            // 信頼度チェック（iOS Safari用）- 閾値を緩和
-                            if (confidence < 0.5) {
-                                console.warn('Low confidence speech recognition:', confidence);
+                            // 信頼度チェック（iOS Safari用）- 最小限のチェック
+                            if (confidence < 0.2) {
+                                console.warn('Very low confidence speech recognition:', confidence);
                                 
-                                if (confidence < 0.3) {
-                                    // 信頼度が非常に低い場合のみ再認識を促す
-                                    this.updateStatus('音声がはっきり聞こえませんでした。もう一度、はっきりと話してください。', 'warning');
-                                    this.stats.reRecognitionCount++;
-                                    this.updateStats();
-                                    
-                                    // 自動的に再認識を試行（時間短縮）
-                                    setTimeout(() => {
-                                        if (!this.isRecording) {
-                                            this.startRecognition();
-                                        }
-                                    }, 1000);
-                                    return;
-                                }
+                                // 信頼度が極めて低い場合のみ再認識を促す
+                                this.updateStatus('音声がはっきり聞こえませんでした。もう一度、はっきりと話してください。', 'warning');
+                                this.stats.reRecognitionCount++;
+                                this.updateStats();
+                                
+                                // 自動的に再認識を試行（時間短縮）
+                                setTimeout(() => {
+                                    if (!this.isRecording) {
+                                        this.startRecognition();
+                                    }
+                                }, 200);
+                                return;
                             }
                             
                             // 結果を処理
@@ -450,16 +448,16 @@
                         }
                     });
                     
-                    // 6. iOS Safari用の音声認識終了処理（遅延時間短縮）
+                    // 6. iOS Safari用の音声認識終了処理（遅延時間大幅短縮）
                     this.recognition.addEventListener('end', () => {
                         console.log('Speech recognition ended');
                         
-                        // iOS Safariでは遅延時間を短縮
+                        // iOS Safariでは遅延時間を大幅短縮
                         setTimeout(() => {
                             this.isRecording = false;
                             this.updateStatus('音声認識終了', 'idle');
                             this.updateButtons();
-                        }, 100);
+                        }, 50);
                     });
                     
                 } else {
@@ -519,8 +517,8 @@
             }
             
             getConfidenceLevel(confidence) {
-                if (confidence >= 0.6) return 'high';
-                if (confidence >= 0.4) return 'medium';
+                if (confidence >= 0.4) return 'high';
+                if (confidence >= 0.2) return 'medium';
                 return 'low';
             }
             
@@ -547,7 +545,7 @@
                     if (!this.isRecording) {
                         this.startRecognition();
                     }
-                }, 500);
+                }, 200);
             }
             
             setupEventListeners() {
@@ -567,11 +565,11 @@
             startRecognition() {
                 if (this.recognition && !this.isRecording) {
                     try {
-                        // iOS Safari用の遅延開始
+                        // iOS Safari用の遅延開始（時間短縮）
                         if (this.browser.needsSpecialHandling) {
                             setTimeout(() => {
                                 this.recognition.start();
-                            }, 100);
+                            }, 50);
                         } else {
                             this.recognition.start();
                         }
