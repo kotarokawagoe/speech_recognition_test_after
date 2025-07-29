@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音声認識テスト - 修正後</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .test-info {
+            background: #f8f9fa;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+        }
+        
+        .test-info h3 {
+            color: #28a745;
+            margin-top: 0;
+        }
+        
+        .control-panel {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #1e7e34;
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .status.recording {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.idle {
+            background: #e2e3e5;
+            color: #383d41;
+            border: 1px solid #d6d8db;
+        }
+        
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .results {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .result-item {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .result-item.high-confidence {
+            border-left: 4px solid #28a745;
+        }
+        
+        .result-item.medium-confidence {
+            border-left: 4px solid #ffc107;
+        }
+        
+        .result-item.low-confidence {
+            border-left: 4px solid #dc3545;
+        }
+        
+        .result-text {
+            font-size: 18px;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        
+        .result-confidence {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .result-time {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+        
+        .browser-info {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        
+        .confidence-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #dc3545, #ffc107, #28a745);
+            transition: width 0.3s ease;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .improvements {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .improvements h4 {
+            color: #0c5460;
+            margin-top: 0;
+        }
+        
+        .improvements ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .improvements li {
+            margin-bottom: 5px;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 音声認識テスト - 修正後</h1>
+        
+        <div class="test-info">
+            <h3>✅ 修正後の実装</h3>
+            <p>このページでは、iPhoneでの音声認識精度を改善するための修正版をテストできます。ブラウザ検出、信頼度チェック、エラーハンドリングが強化されています。</p>
+        </div>
+        
+        <div class="improvements">
+            <h4>🔧 実装された改善点</h4>
+            <ul>
+                <li><strong>ブラウザ検出:</strong> iOS Safari/Chromeを正確に識別</li>
+                <li><strong>信頼度チェック:</strong> 低信頼度の認識結果を自動フィルタリング</li>
+                <li><strong>エラーハンドリング:</strong> 詳細なエラーメッセージと解決策</li>
+                <li><strong>遅延処理:</strong> iOS Safari用の安定化処理</li>
+                <li><strong>再認識機能:</strong> 低信頼度時の自動再試行</li>
+            </ul>
+        </div>
+        
+        <div class="browser-info">
+            <strong>ブラウザ情報:</strong><br>
+            <span id="browser-info">読み込み中...</span>
+        </div>
+        
+        <div class="control-panel">
+            <button id="startBtn" class="btn btn-primary">🎤 音声認識開始</button>
+            <button id="stopBtn" class="btn btn-danger" disabled>⏹️ 停止</button>
+            <button id="clearBtn" class="btn btn-success">🗑️ 結果クリア</button>
+        </div>
+        
+        <div id="status" class="status idle">
+            準備完了 - マイクボタンを押して音声認識を開始してください
+        </div>
+        
+        <div class="results">
+            <h3>認識結果</h3>
+            <div id="resultsList">
+                <p style="color: #666; text-align: center;">認識結果がここに表示されます</p>
+            </div>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalAttempts">0</div>
+                <div class="stat-label">総試行回数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="successRate">0%</div>
+                <div class="stat-label">成功率</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgConfidence">0%</div>
+                <div class="stat-label">平均信頼度</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="reRecognitionCount">0</div>
+                <div class="stat-label">再認識回数</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 修正後の実装（改善版）
+        class ImprovedSpeechRecognitionTest {
+            constructor() {
+                this.recognition = null;
+                this.isRecording = false;
+                this.results = [];
+                this.stats = {
+                    totalAttempts: 0,
+                    successfulAttempts: 0,
+                    totalConfidence: 0,
+                    reRecognitionCount: 0
+                };
+                this.browser = this.detectBrowser();
+                
+                this.initializeSpeechRecognition();
+                this.setupEventListeners();
+                this.updateBrowserInfo();
+            }
+            
+            detectBrowser() {
+                const userAgent = navigator.userAgent;
+                
+                const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+                const isSafari = /Safari/.test(userAgent) && !/Chrome/.test(userAgent);
+                const isChromeOnIOS = /CriOS/.test(userAgent);
+                const isFirefoxOnIOS = /FxiOS/.test(userAgent);
+                const isEdgeOnIOS = /EdgiOS/.test(userAgent);
+                
+                const needsSpecialHandling = isIOS && (isSafari || isChromeOnIOS);
+                const hasSpeechRecognition = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+                
+                return {
+                    isIOS,
+                    isSafari,
+                    isChromeOnIOS,
+                    isFirefoxOnIOS,
+                    isEdgeOnIOS,
+                    needsSpecialHandling,
+                    hasSpeechRecognition,
+                    browserInfo: {
+                        userAgent: userAgent,
+                        platform: navigator.platform,
+                        vendor: navigator.vendor
+                    }
+                };
+            }
+            
+            initializeSpeechRecognition() {
+                if (!this.browser.hasSpeechRecognition) {
+                    this.updateStatus('音声認識がサポートされていません', 'error');
+                    return;
+                }
+                
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                this.recognition = new SpeechRecognition();
+                
+                // 基本設定
+                this.recognition.lang = 'ja-JP';
+                this.recognition.continuous = false;
+                
+                // iOS Safari用の特別設定
+                if (this.browser.needsSpecialHandling) {
+                    console.log('iOS Safari/Chrome detected - applying special settings');
+                    
+                    // 1. 中間結果を無効化（安定性向上）
+                    this.recognition.interimResults = false;
+                    
+                    // 2. 代替候補を1つに制限（処理速度向上）
+                    this.recognition.maxAlternatives = 1;
+                    
+                    // 3. カスタム文法を無効化（互換性向上）
+                    this.recognition.grammars = null;
+                    
+                    // 4. iOS Safari用のエラーハンドリング強化
+                    this.recognition.addEventListener('error', (event) => {
+                        console.error('Speech recognition error:', event.error);
+                        
+                        switch(event.error) {
+                            case 'not-allowed':
+                                this.updateStatus('音声認識の権限が許可されていません。設定から音声認識を許可してください。', 'error');
+                                break;
+                            case 'no-speech':
+                                console.log('音声が検出されませんでした');
+                                this.updateStatus('音声が検出されませんでした。もう一度お試しください。', 'warning');
+                                // 自動的に再認識を試行
+                                setTimeout(() => {
+                                    if (!this.isRecording) {
+                                        this.startRecognition();
+                                    }
+                                }, 1000);
+                                break;
+                            case 'audio-capture':
+                                this.updateStatus('マイクへのアクセスができません。マイクの権限を確認してください。', 'error');
+                                break;
+                            case 'network':
+                                this.updateStatus('ネットワークエラーが発生しました。接続を確認してください。', 'error');
+                                break;
+                            case 'service-not-allowed':
+                                this.updateStatus('音声認識サービスが利用できません。ブラウザの設定を確認してください。', 'error');
+                                break;
+                            default:
+                                console.error('Unknown speech recognition error:', event.error);
+                                this.updateStatus('音声認識でエラーが発生しました。もう一度お試しください。', 'error');
+                        }
+                    });
+                    
+                    // 5. iOS Safari用の音声認識結果処理
+                    this.recognition.addEventListener('result', (event) => {
+                        if (event.results.length > 0) {
+                            const transcript = event.results[0][0].transcript.trim();
+                            const confidence = event.results[0][0].confidence;
+                            
+                            console.log('Speech recognition result:', {
+                                transcript: transcript,
+                                confidence: confidence,
+                                browser: this.browser.browserInfo
+                            });
+                            
+                            // 信頼度チェック（iOS Safari用）
+                            if (confidence < 0.7) {
+                                console.warn('Low confidence speech recognition:', confidence);
+                                
+                                if (confidence < 0.5) {
+                                    // 信頼度が非常に低い場合は再認識を促す
+                                    this.updateStatus('音声がはっきり聞こえませんでした。もう一度、はっきりと話してください。', 'warning');
+                                    this.stats.reRecognitionCount++;
+                                    this.updateStats();
+                                    
+                                    // 自動的に再認識を試行
+                                    setTimeout(() => {
+                                        if (!this.isRecording) {
+                                            this.startRecognition();
+                                        }
+                                    }, 2000);
+                                    return;
+                                }
+                            }
+                            
+                            // 結果を処理
+                            this.handleSpeechResult(transcript, confidence);
+                        }
+                    });
+                    
+                    // 6. iOS Safari用の音声認識終了処理
+                    this.recognition.addEventListener('end', () => {
+                        console.log('Speech recognition ended');
+                        
+                        // iOS Safariでは少し遅延させてから後処理を実行
+                        setTimeout(() => {
+                            this.isRecording = false;
+                            this.updateStatus('音声認識終了', 'idle');
+                            this.updateButtons();
+                        }, 200);
+                    });
+                    
+                } else {
+                    // 通常のブラウザ用設定
+                    console.log('Standard browser detected - using normal settings');
+                    
+                    this.recognition.addEventListener('result', (event) => {
+                        if (event.results.length > 0) {
+                            const transcript = event.results[0][0].transcript.trim();
+                            const confidence = event.results[0][0].confidence;
+                            
+                            console.log('Speech recognition result:', {
+                                transcript: transcript,
+                                confidence: confidence
+                            });
+                            
+                            this.handleSpeechResult(transcript, confidence);
+                        }
+                    });
+                    
+                    this.recognition.addEventListener('end', () => {
+                        console.log('Speech recognition ended');
+                        this.isRecording = false;
+                        this.updateStatus('音声認識終了', 'idle');
+                        this.updateButtons();
+                    });
+                    
+                    this.recognition.addEventListener('error', (event) => {
+                        console.error('Speech recognition error:', event.error);
+                        this.updateStatus(`エラー: ${event.error}`, 'error');
+                        this.isRecording = false;
+                        this.updateButtons();
+                    });
+                }
+            }
+            
+            handleSpeechResult(transcript, confidence) {
+                // 信頼度に基づく処理
+                const confidenceLevel = this.getConfidenceLevel(confidence);
+                
+                switch(confidenceLevel) {
+                    case 'high':
+                        // 高信頼度：即座に使用
+                        this.addResult(transcript, confidence, 'high-confidence');
+                        break;
+                        
+                    case 'medium':
+                        // 中信頼度：確認ダイアログ
+                        this.showConfirmationDialog(transcript, confidence);
+                        break;
+                        
+                    case 'low':
+                        // 低信頼度：再認識要求
+                        this.requestReRecognition();
+                        break;
+                }
+            }
+            
+            getConfidenceLevel(confidence) {
+                if (confidence >= 0.8) return 'high';
+                if (confidence >= 0.6) return 'medium';
+                return 'low';
+            }
+            
+            showConfirmationDialog(transcript, confidence) {
+                const confirmed = confirm(
+                    `認識結果: "${transcript}"\n` +
+                    `信頼度: ${Math.round(confidence * 100)}%\n\n` +
+                    `この内容でよろしいですか？`
+                );
+                
+                if (confirmed) {
+                    this.addResult(transcript, confidence, 'medium-confidence');
+                } else {
+                    this.requestReRecognition();
+                }
+            }
+            
+            requestReRecognition() {
+                this.stats.reRecognitionCount++;
+                this.updateStats();
+                this.updateStatus('再認識を開始します...', 'warning');
+                
+                setTimeout(() => {
+                    if (!this.isRecording) {
+                        this.startRecognition();
+                    }
+                }, 1000);
+            }
+            
+            setupEventListeners() {
+                document.getElementById('startBtn').addEventListener('click', () => {
+                    this.startRecognition();
+                });
+                
+                document.getElementById('stopBtn').addEventListener('click', () => {
+                    this.stopRecognition();
+                });
+                
+                document.getElementById('clearBtn').addEventListener('click', () => {
+                    this.clearResults();
+                });
+            }
+            
+            startRecognition() {
+                if (this.recognition && !this.isRecording) {
+                    try {
+                        // iOS Safari用の遅延開始
+                        if (this.browser.needsSpecialHandling) {
+                            setTimeout(() => {
+                                this.recognition.start();
+                            }, 100);
+                        } else {
+                            this.recognition.start();
+                        }
+                        
+                        this.isRecording = true;
+                        this.updateStatus('音声認識中... 話してください', 'recording');
+                        this.updateButtons();
+                        this.stats.totalAttempts++;
+                        this.updateStats();
+                    } catch (error) {
+                        console.error('Failed to start recognition:', error);
+                        this.updateStatus('音声認識の開始に失敗しました', 'error');
+                    }
+                }
+            }
+            
+            stopRecognition() {
+                if (this.recognition && this.isRecording) {
+                    this.recognition.stop();
+                    this.isRecording = false;
+                    this.updateStatus('音声認識停止', 'idle');
+                    this.updateButtons();
+                }
+            }
+            
+            addResult(transcript, confidence, confidenceClass = '') {
+                const result = {
+                    text: transcript,
+                    confidence: confidence,
+                    timestamp: new Date().toLocaleTimeString(),
+                    confidenceClass: confidenceClass
+                };
+                
+                this.results.unshift(result);
+                this.stats.successfulAttempts++;
+                this.stats.totalConfidence += confidence;
+                
+                this.updateResults();
+                this.updateStats();
+            }
+            
+            updateResults() {
+                const resultsList = document.getElementById('resultsList');
+                
+                if (this.results.length === 0) {
+                    resultsList.innerHTML = '<p style="color: #666; text-align: center;">認識結果がここに表示されます</p>';
+                    return;
+                }
+                
+                resultsList.innerHTML = this.results.map(result => `
+                    <div class="result-item ${result.confidenceClass}">
+                        <div class="result-text">${result.text}</div>
+                        <div class="result-confidence">
+                            信頼度: ${Math.round(result.confidence * 100)}%
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" style="width: ${result.confidence * 100}%"></div>
+                            </div>
+                        </div>
+                        <div class="result-time">${result.timestamp}</div>
+                    </div>
+                `).join('');
+            }
+            
+            clearResults() {
+                this.results = [];
+                this.stats = {
+                    totalAttempts: 0,
+                    successfulAttempts: 0,
+                    totalConfidence: 0,
+                    reRecognitionCount: 0
+                };
+                this.updateResults();
+                this.updateStats();
+            }
+            
+            updateStats() {
+                document.getElementById('totalAttempts').textContent = this.stats.totalAttempts;
+                
+                const successRate = this.stats.totalAttempts > 0 
+                    ? Math.round((this.stats.successfulAttempts / this.stats.totalAttempts) * 100)
+                    : 0;
+                document.getElementById('successRate').textContent = `${successRate}%`;
+                
+                const avgConfidence = this.stats.successfulAttempts > 0
+                    ? Math.round((this.stats.totalConfidence / this.stats.successfulAttempts) * 100)
+                    : 0;
+                document.getElementById('avgConfidence').textContent = `${avgConfidence}%`;
+                
+                document.getElementById('reRecognitionCount').textContent = this.stats.reRecognitionCount;
+            }
+            
+            updateStatus(message, type) {
+                const status = document.getElementById('status');
+                status.textContent = message;
+                status.className = `status ${type}`;
+            }
+            
+            updateButtons() {
+                const startBtn = document.getElementById('startBtn');
+                const stopBtn = document.getElementById('stopBtn');
+                
+                startBtn.disabled = this.isRecording;
+                stopBtn.disabled = !this.isRecording;
+            }
+            
+            updateBrowserInfo() {
+                const browserInfo = document.getElementById('browser-info');
+                browserInfo.innerHTML = `
+                    User-Agent: ${this.browser.browserInfo.userAgent}<br>
+                    iOS: ${this.browser.isIOS ? 'Yes' : 'No'}<br>
+                    Safari: ${this.browser.isSafari ? 'Yes' : 'No'}<br>
+                    Chrome on iOS: ${this.browser.isChromeOnIOS ? 'Yes' : 'No'}<br>
+                    Firefox on iOS: ${this.browser.isFirefoxOnIOS ? 'Yes' : 'No'}<br>
+                    Edge on iOS: ${this.browser.isEdgeOnIOS ? 'Yes' : 'No'}<br>
+                    Special Handling: ${this.browser.needsSpecialHandling ? 'Yes' : 'No'}<br>
+                    Speech Recognition: ${this.recognition ? 'Supported' : 'Not Supported'}
+                `;
+            }
+        }
+        
+        // テスト開始
+        document.addEventListener('DOMContentLoaded', () => {
+            new ImprovedSpeechRecognitionTest();
+        });
+    </script>
+</body>
+</html> 
